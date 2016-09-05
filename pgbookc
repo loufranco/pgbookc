@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -eu
+
+# Check arguments
+if [ $# -ne 2 ]; then
+	echo "Usage: $0 <path to Contents directory> <output book package path>"
+	echo " e.g.: $0 Project/Contents build/Project.playgroundbook"
+	exit
+fi
+
+if [ ! -d "$1" ]; then
+	echo "Cannot find $1 directory"
+	exit
+fi
+
+# Clean the output .playgroundbook directory
+if [ -d "$2" ]; then
+	rm -rf "$2"
+fi
+
+# Make the output directory
+mkdir "$2"
+cp -R "$1" "$2"
+
+# Rename all Contents.swift files
+find "$2" -type d -name '*.playgroundpage' -exec sh -c "cd '{}'; mv Contents-*.swift Contents.swift; cd - > /dev/null" \; 2> /dev/null
+
+# Rename all LiveView.swift files
+find "$2" -type d -name '*.playgroundpage' -exec sh -c "cd '{}'; mv LiveView-*.swift LiveView.swift; cd - > /dev/null" \; 2> /dev/null
+
+# Look for REMOVE comments in .swift files and remove them
+find "$2" -name \*.swift -exec sed -i '' "s/\\/\\*-REMOVE//" {} \;
+find "$2" -name \*.swift -exec sed -i '' "s/REMOVE-\\*\\///" {} \;
+find "$2" -name \*.swift -exec sed -i '' "s/\\/\\/-REMOVE//" {} \;
+
+# Look for REMOVE LINE comments in .swift files and remove the whole line
+find "$2" -name \*.swift -exec sed -i '' "s/^.*\\/\\/ *REMOVE *LINE//" {} \;
